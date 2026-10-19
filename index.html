@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./css/style.css">
     <link rel="stylesheet" href="css\bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <title>3D Cube Scroll</title> 
+    <title>Портфолио</title> 
     <style>
         body, html {
             margin: 0; 
@@ -76,37 +76,113 @@
     </div>
 <div class="fon"></div>
 
-
     <script>
         let vertContainer = document.querySelector('.vertContainer'); 
         let blocks = document.querySelectorAll('.block'); 
         let currentRotation = 0;
         let rotationStep = 360 / blocks.length;
 
-        window.addEventListener('wheel', (event) => { 
-            if(event.altKey){
-                blocks.forEach((block, index) => { 
-                    let angle = -rotationStep * index; 
-                    block.style.transform = `rotateY(${angle}deg) translateZ(138.3vh)`;
-                });
-                if (event.deltaY > 0) { 
-                    currentRotation += rotationStep; 
-                } else if (event.deltaY < 0) {
-                    currentRotation -= rotationStep; 
-                }
-                vertContainer.style.transform = `rotateY(${currentRotation}deg)`;
-            }else{
-                blocks.forEach((block, index) => { 
-                    let angle = -rotationStep * index; 
-                    block.style.transform = `rotateX(${angle}deg) translateZ(68.7vh)`;
-                });
-                if (event.deltaY > 0) { 
-                    currentRotation += rotationStep; 
-                } else if (event.deltaY < 0) {
-                    currentRotation -= rotationStep; 
-                }
-                vertContainer.style.transform = `rotateX(${currentRotation}deg)`;
+        let wheelHandler = null;
+        let touchStartHandler = null;
+        let touchMoveHandler = null;
+        let touchEndHandler = null;
+        let resizeTimeout = null;
+
+        function removeTouchListeners() {
+            if (touchStartHandler) document.removeEventListener('touchstart', touchStartHandler);
+            if (touchMoveHandler) document.removeEventListener('touchmove', touchMoveHandler);
+            if (touchEndHandler) document.removeEventListener('touchend', touchEndHandler);
+        }
+
+        function removeWheelListener() {
+            if (wheelHandler) window.removeEventListener('wheel', wheelHandler);
+        }
+
+        function applyScrollLogic() {
+            removeWheelListener();
+            removeTouchListeners();
+
+            if (window.innerWidth >= 1025) {
+                wheelHandler = (event) => { 
+                    if(event.altKey){
+                        blocks.forEach((block, index) => { 
+                            let angle = -rotationStep * index; 
+                            block.style.transform = `rotateY(${angle}deg) translateZ(138.3vh)`;
+                        });
+                        if (event.deltaY > 0) { 
+                            currentRotation += rotationStep; 
+                        } else if (event.deltaY < 0) {
+                            currentRotation -= rotationStep; 
+                        }
+                        vertContainer.style.transform = `rotateY(${currentRotation}deg)`;
+                    }else{
+                        blocks.forEach((block, index) => { 
+                            let angle = -rotationStep * index; 
+                            block.style.transform = `rotateX(${angle}deg) translateZ(68.7vh)`;
+                        });
+                        if (event.deltaY > 0) { 
+                            currentRotation += rotationStep; 
+                        } else if (event.deltaY < 0) {
+                            currentRotation -= rotationStep; 
+                        }
+                        vertContainer.style.transform = `rotateX(${currentRotation}deg)`;
+                    }
+                };
+                window.addEventListener('wheel', wheelHandler);
+            } else if (window.innerWidth <= 1024) {
+                let touchStartY = 0;
+                let accumulatedDelta = 0;
+                let isScrolling = false;
+                const threshold = 150;
+
+                touchStartHandler = (e) => {
+                    touchStartY = e.touches[0].clientY;
+                    accumulatedDelta = 0;
+                    isScrolling = true;
+                };
+
+                touchMoveHandler = (e) => {
+                    if (!isScrolling) return;
+
+                    let deltaY = touchStartY - e.touches[0].clientY;
+                    accumulatedDelta += deltaY;
+                    touchStartY = e.touches[0].clientY;
+
+                    if (Math.abs(accumulatedDelta) >= threshold) {
+                        if (accumulatedDelta > 0) { 
+                            currentRotation += rotationStep; 
+                        } else {
+                            currentRotation -= rotationStep; 
+                        }
+
+                        accumulatedDelta = 0;
+
+                        vertContainer.style.transform = `rotateX(${currentRotation}deg)`;
+
+                        blocks.forEach((block, index) => { 
+                            let angle = -rotationStep * index; 
+                            block.style.transform = `rotateX(${angle}deg) translateZ(68.7vh)`;
+                        });
+                    }
+                };
+
+                touchEndHandler = () => {
+                    isScrolling = false;
+                };
+
+                document.addEventListener('touchstart', touchStartHandler);
+                document.addEventListener('touchmove', touchMoveHandler);
+                document.addEventListener('touchend', touchEndHandler);
             }
+        }
+
+        applyScrollLogic();
+
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                applyScrollLogic();
+            }, 1000);
         });
     </script>
     <script src="./js/bootstrap.bundle.min.js"></script>
